@@ -52,6 +52,8 @@
     <Reference Include="System.EnterpriseServices" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="DiffPatchMatchDemo.aspx" />
+    <Content Include="DocDiff.aspx" />
     <Content Include="Default.aspx" />
     <Content Include="Examples\DeOfficiis.txt" />
     <Content Include="Examples\DeOfficiis_Altered.txt" />
@@ -66,12 +68,19 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Default.aspx.cs">
-      <DependentUpon>Default.aspx</DependentUpon>
+    <Compile Include="DiffPatchMatchDemo.aspx.cs">
+      <DependentUpon>DiffPatchMatchDemo.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Default.aspx.designer.cs">
-      <DependentUpon>Default.aspx</DependentUpon>
+    <Compile Include="DiffPatchMatchDemo.aspx.designer.cs">
+      <DependentUpon>DiffPatchMatchDemo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="DocDiff.aspx.cs">
+      <DependentUpon>DocDiff.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="DocDiff.aspx.designer.cs">
+      <DependentUpon>DocDiff.aspx</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -35,17 +35,6 @@ namespace DiffMatchPatch {
 		private const short Match_MaxBits = 32;
 		//  DIFF FUNCTIONS
 
-
-		/*
-		 * Find the differences between two texts.
-		 * Run a faster, slightly less optimal diff.
-		 * This method allows the 'checklines' of diff_main() to be optional.
-		 * Most of the time checklines is wanted, so default to true.
-		 * @param text1 Old string to be diffed.
-		 * @param text2 New string to be diffed.
-		 * @return List of Diff objects.
-		 */
-
 		/// <summary>
 		///  Find the differences between two texts.
 		///  Run a faster, slightly less optimal diff.
@@ -452,7 +441,7 @@ namespace DiffMatchPatch {
 		 * @param lineHash Map of strings to indices.
 		 * @return Encoded string.
 		 */
-		private string diff_linesToCharsMunge (string text, List<string> lineArray,
+		private static string diff_linesToCharsMunge (string text, List<string> lineArray,
 											  Dictionary<string, int> lineHash) {
 			int lineStart = 0;
 			int lineEnd = -1;

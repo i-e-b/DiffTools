@@ -4,7 +4,7 @@
 		// Set these on your diff_match_patch instance to override the defaults.
 
 		/// <summary>Number of seconds to map a diff before giving up (0 for infinity).</summary>
-		public float Diff_Timeout = 1.0f;
+		public float Diff_Timeout = 0.0f;
 
 		/// <summary>Cost of an empty edit operation in terms of edit characters.</summary>
 		public short Diff_EditCost = 4;

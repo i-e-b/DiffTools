@@ -180,7 +180,7 @@ namespace DocDiff {
 			}
 
 			if (String.IsNullOrEmpty(iStr)) {
-				Inserts = null;
+				Inserts = "";
 			} else {
 				Inserts = iStr;
 			}
