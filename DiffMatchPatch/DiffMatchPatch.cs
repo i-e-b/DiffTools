@@ -27,184 +27,16 @@ using System.Text.RegularExpressions;
 using System.Web;
 
 namespace DiffMatchPatch {
-	/**-
-	   * The data structure representing a diff is a List of Diff objects:
-	   * {Diff(Operation.DELETE, "Hello"), Diff(Operation.INSERT, "Goodbye"),
-	   *  Diff(Operation.EQUAL, " world.")}
-	   * which means: delete "Hello", add "Goodbye" and keep " world."
-	   */
-	public enum Operation {
-		Delete, Insert, Equal
-	}
-
-
-	/**
-	 * Class representing one diff operation.
-	 */
-	public class Diff {
-		public Operation operation;
-		// One of: INSERT, DELETE or EQUAL.
-		public string text;
-		// The text associated with this diff operation.
-
-		/**
-		 * Constructor.  Initializes the diff with the provided values.
-		 * @param operation One of INSERT, DELETE or EQUAL.
-		 * @param text The text being applied.
-		 */
-		public Diff (Operation operation, string text) {
-			// Construct a diff with the specified operation and text.
-			this.operation = operation;
-			this.text = text;
-		}
-
-		/**
-		 * Display a human-readable version of this Diff.
-		 * @return text version.
-		 */
-		public override string ToString () {
-			string prettyText = text.Replace('\n', '\u00b6');
-			return "Diff(" + operation + ",\"" + prettyText + "\")";
-		}
-
-		/**
-		 * Is this Diff equivalent to another Diff?
-		 * @param d Another Diff to compare against.
-		 * @return true or false.
-		 */
-		public override bool Equals (Object obj) {
-			// If parameter is null return false.
-			if (obj == null) {
-				return false;
-			}
-
-			// If parameter cannot be cast to Diff return false.
-			var p = obj as Diff;
-			if (p == null) {
-				return false;
-			}
-
-			// Return true if the fields match.
-			return p.operation == operation && p.text == text;
-		}
-
-		public bool Equals (Diff obj) {
-			// If parameter is null return false.
-			if (obj == null) {
-				return false;
-			}
-
-			// Return true if the fields match.
-			return obj.operation == operation && obj.text == text;
-		}
-
-		public override int GetHashCode () {
-			return text.GetHashCode() ^ operation.GetHashCode();
-		}
-	}
-
-
-	/**
-	 * Class representing one patch operation.
-	 */
-	public class Patch {
-		public List<Diff> diffs = new List<Diff>();
-		public int start1;
-		public int start2;
-		public int length1;
-		public int length2;
-
-		/**
-		 * Emmulate GNU diff's format.
-		 * Header: @@ -382,8 +481,9 @@
-		 * Indicies are printed as 1-based, not 0-based.
-		 * @return The GNU diff string.
-		 */
-		public override string ToString () {
-			string coords1, coords2;
-			switch (length1) {
-				case 0:
-					coords1 = start1 + ",0";
-					break;
-				case 1:
-					coords1 = Convert.ToString(start1 + 1);
-					break;
-				default:
-					coords1 = (start1 + 1) + "," + length1;
-					break;
-			}
-			switch (length2) {
-				case 0:
-					coords2 = start2 + ",0";
-					break;
-				case 1:
-					coords2 = Convert.ToString(start2 + 1);
-					break;
-				default:
-					coords2 = (start2 + 1) + "," + length2;
-					break;
-			}
-			var text = new StringBuilder();
-			text.Append("@@ -").Append(coords1).Append(" +").Append(coords2)
-				.Append(" @@\n");
-			// Escape the body of the patch with %xx notation.
-			foreach (Diff aDiff in diffs) {
-				switch (aDiff.operation) {
-					case Operation.Insert:
-						text.Append('+');
-						break;
-					case Operation.Delete:
-						text.Append('-');
-						break;
-					case Operation.Equal:
-						text.Append(' ');
-						break;
-				}
-
-				text.Append(HttpUtility.UrlEncode(aDiff.text,
-					new UTF8Encoding()).Replace('+', ' ')).Append("\n");
-			}
-
-			return diff_match_patch.unescapeForEncodeUriCompatability(
-				text.ToString());
-		}
-	}
-
-
-	/**
-	 * Class containing the diff, match and patch methods.
-	 * Also Contains the behaviour settings.
-	 */
-	public class diff_match_patch {
-		// Defaults.
-		// Set these on your diff_match_patch instance to override the defaults.
-
-		// Number of seconds to map a diff before giving up (0 for infinity).
-		public float Diff_Timeout = 1.0f;
-		// Cost of an empty edit operation in terms of edit characters.
-		public short Diff_EditCost = 4;
-		// At what point is no match declared (0.0 = perfection, 1.0 = very loose).
-		public float Match_Threshold = 0.5f;
-		// How far to search for a match (0 = exact location, 1000+ = broad match).
-		// A match this many characters away from the expected location will add
-		// 1.0 to the score (0.0 is a perfect match).
-		public int Match_Distance = 1000;
-		// When deleting a large block of text (over ~64 characters), how close
-		// does the contents have to match the expected contents. (0.0 =
-		// perfection, 1.0 = very loose).  Note that Match_Threshold controls
-		// how closely the end points of a delete need to match.
-		public float Patch_DeleteThreshold = 0.5f;
-		// Chunk size for context length.
-		public short Patch_Margin = 4;
-
-		// The number of bits in an int.
+	/// <summary>
+	/// Diff, patch and match controller
+	/// </summary>
+	public class diff_match_patch : DMPSettings {
+		/// <summary>The number of bits in an int.</summary>
 		private const short Match_MaxBits = 32;
-
-
 		//  DIFF FUNCTIONS
 
 
-		/**
+		/*
 		 * Find the differences between two texts.
 		 * Run a faster, slightly less optimal diff.
 		 * This method allows the 'checklines' of diff_main() to be optional.
@@ -213,19 +45,29 @@ namespace DiffMatchPatch {
 		 * @param text2 New string to be diffed.
 		 * @return List of Diff objects.
 		 */
+
+		/// <summary>
+		///  Find the differences between two texts.
+		///  Run a faster, slightly less optimal diff.
+		///  This method allows the 'checklines' of diff_main() to be optional.
+		///  Most of the time checklines is wanted, so default to true.
+		/// </summary>
+		/// <param name="text1">Old string to be diffed.</param>
+		/// <param name="text2">New string to be diffed.</param>
+		/// <returns>List of Diff objects.</returns>
 		public List<Diff> diff_main (string text1, string text2) {
 			return diff_main(text1, text2, true);
 		}
 
-		/**
-		 * Find the differences between two texts.
-		 * @param text1 Old string to be diffed.
-		 * @param text2 New string to be diffed.
-		 * @param checklines Speedup flag.  If false, then don't run a
-		 *     line-level diff first to identify the changed areas.
-		 *     If true, then run a faster slightly less optimal diff.
-		 * @return List of Diff objects.
-		 */
+		/// <summary>
+		/// Find the differences between two texts.
+		/// </summary>
+		/// <param name="text1">Old string to be diffed</param>
+		/// <param name="text2">New string to be diffed</param>
+		/// <param name="checklines">Speedup flag.  If false, then don't run a
+		///     line-level diff first to identify the changed areas.
+		///     If true, then run a faster slightly less optimal diff</param>
+		/// <returns>List of Diff objects</returns>
 		public List<Diff> diff_main (string text1, string text2, bool checklines) {
 			// Set a deadline by which time the diff must be complete.
 			DateTime deadline;
@@ -238,19 +80,19 @@ namespace DiffMatchPatch {
 			return diff_main(text1, text2, checklines, deadline);
 		}
 
-		/**
-		 * Find the differences between two texts.  Simplifies the problem by
-		 * stripping any common prefix or suffix off the texts before diffing.
-		 * @param text1 Old string to be diffed.
-		 * @param text2 New string to be diffed.
-		 * @param checklines Speedup flag.  If false, then don't run a
-		 *     line-level diff first to identify the changed areas.
-		 *     If true, then run a faster slightly less optimal diff.
-		 * @param deadline Time when the diff should be complete by.  Used
-		 *     internally for recursive calls.  Users should set DiffTimeout
-		 *     instead.
-		 * @return List of Diff objects.
-		 */
+		/// <summary>
+		/// Find the differences between two texts.  Simplifies the problem by
+		/// stripping any common prefix or suffix off the texts before diffing.
+		/// </summary>
+		/// <param name="text1">Old string to be diffed</param>
+		/// <param name="text2">New string to be diffed</param>
+		/// <param name="checklines">Speedup flag.  If false, then don't run a
+		///    line-level diff first to identify the changed areas.
+		///    If true, then run a faster slightly less optimal diff.</param>
+		/// <param name="deadline">Time when the diff should be complete by.  Used
+		///    internally for recursive calls.  Users should set DiffTimeout
+		///    instead.</param>
+		/// <returns>List of Diff objects</returns>
 		private List<Diff> diff_main (string text1, string text2, bool checklines,
 			DateTime deadline) {
 			// Check for null inputs not needed since null can't be passed in C#.

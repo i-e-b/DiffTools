@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO.Compression;
 using System.IO;
+using System.Text;
 
-namespace System.Text {
+namespace DocDiff {
 	/// <summary>
 	/// Tools for manipulating the output of System.Text.Diff package.
 	/// </summary>
@@ -44,7 +46,7 @@ namespace System.Text {
 		/// Build and return a revision by applying a set of DiffCodes to a base version.
 		/// DiffCodes should be from CompressedDiffCode() or BuildDiffCode().
 		/// </summary>
-		public static List<Diff.Fragment> BuildChanges (string BaseRevision, string DiffCodes) {
+		public static List<Differences.Fragment> BuildChanges (string BaseRevision, string DiffCodes) {
 			// Decide if it's compressed or not, and send to appropriate decoder.
 			return DiffCodes.StartsWith("[DCMP]") 
 				? BuildChanges(BaseRevision, Convert.FromBase64String(DiffCodes.Substring(6))) 
@@ -55,7 +57,7 @@ namespace System.Text {
 		/// Build and return a revision by applying a set of DiffCodes to a base version.
 		/// DiffCodes should be from StorageDiffCode().
 		/// </summary>
-		public static List<Diff.Fragment> BuildChanges (string BaseRevision, byte[] DiffCodes) {
+		public static List<Differences.Fragment> BuildChanges (string BaseRevision, byte[] DiffCodes) {
 			// Decompress and send to real decoder.
 			var @in = new MemoryStream(DiffCodes); // this will receive the compressed code
 			var filter = new DeflateStream(@in, CompressionMode.Decompress);
@@ -71,18 +73,18 @@ namespace System.Text {
 
 		#region Inner Workings
 
-		private static List<Diff.Fragment> DecodeRevisionFragments (string BaseRevision, string DiffCodes) {
-			var @out = new List<Diff.Fragment>();
+		private static List<Differences.Fragment> DecodeRevisionFragments (string BaseRevision, string DiffCodes) {
+			var @out = new List<Differences.Fragment>();
 
 			if (String.IsNullOrEmpty(DiffCodes)) {
 				// no changes.
-				@out.Add(new Diff.Fragment(Diff.FragmentType.Unchanged, BaseRevision, 0));
+				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
 				return @out;
 			}
 			string[] codes = DiffCodes.Split(new[] { (char)31 }, StringSplitOptions.RemoveEmptyEntries);
 			if (codes.Length < 1) {
 				// no changes.
-				@out.Add(new Diff.Fragment(Diff.FragmentType.Unchanged, BaseRevision, 0));
+				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
 				return @out;
 			}
 
@@ -92,7 +94,7 @@ namespace System.Text {
 			DecodeDiffCode(codes[0], out pos, out del, out ins);
 
 			if (pos > 0) { // write leading text
-				@out.Add(new Diff.Fragment(Diff.FragmentType.Unchanged, BaseRevision.Substring(0, pos), 0));
+				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(0, pos), 0));
 			}
 
 			foreach (string code in codes) {
@@ -108,7 +110,7 @@ namespace System.Text {
 					}
 					if (l >= 0) {
 						string skip = BaseRevision.Substring(old_pos, l);
-						@out.Add(new Diff.Fragment(Diff.FragmentType.Unchanged, skip, old_pos));
+						@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, skip, old_pos));
 					} else {
 						// error!
 						throw new Exception("Diff code does not match text - Can't skip!");
@@ -117,18 +119,18 @@ namespace System.Text {
 
 				// Skip deleted text
 				string delstr = BaseRevision.Substring(pos, del);
-				@out.Add(new Diff.Fragment(Diff.FragmentType.Deleted, delstr, pos));
+				@out.Add(new Differences.Fragment(Differences.FragmentType.Deleted, delstr, pos));
 				pos += del;
 
 				// Write any inserted text
 				if (ins.Length > 0) {
-					@out.Add(new Diff.Fragment(Diff.FragmentType.Inserted, ins, pos));
+					@out.Add(new Differences.Fragment(Differences.FragmentType.Inserted, ins, pos));
 				}
 			}
 
 			// Write any unchanged text at the end.
 			if (pos < BaseRevision.Length) {
-				@out.Add(new Diff.Fragment(Diff.FragmentType.Unchanged, BaseRevision.Substring(pos), pos));
+				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(pos), pos));
 			}
 
 			return @out;
@@ -138,11 +140,11 @@ namespace System.Text {
 		/// Build and return a revision by applying a set of DiffCodes to a base version
 		/// </summary>
 		private static string DecodeRevision (string BaseRevision, string DiffCodes) {
-			List<Diff.Fragment> frags = DecodeRevisionFragments(BaseRevision, DiffCodes);
+			List<Differences.Fragment> frags = DecodeRevisionFragments(BaseRevision, DiffCodes);
 
 			var sb = new StringBuilder();
 			foreach (var frag in frags) {
-				if (frag.Type == Diff.FragmentType.Deleted) continue;
+				if (frag.Type == Differences.FragmentType.Deleted) continue;
 				sb.Append(frag.SplitPart);
 			}
 
@@ -195,7 +197,7 @@ namespace System.Text {
 		/// Returns a highly compressed version of BuildDiffCode()
 		/// for textual storage and transmission.
 		/// </summary>
-		public static string CompressedDiffCode (Diff differences) {
+		public static string CompressedDiffCode (Differences differences) {
 			var @out = new MemoryStream(); // this will receive the compressed code
 			var filter = new DeflateStream(@out, CompressionMode.Compress);
 
@@ -209,7 +211,7 @@ namespace System.Text {
 		/// Returns a highly compressed version of BuildDiffCode()
 		/// for binary storage
 		/// </summary>
-		public static byte[] StorageDiffCode (Diff differences) {
+		public static byte[] StorageDiffCode (Differences differences) {
 			var @out = new MemoryStream(); // this will receive the compressed code
 			var filter = new DeflateStream(@out, CompressionMode.Compress);
 
@@ -222,15 +224,15 @@ namespace System.Text {
 		/// <summary>
 		/// Build a code that can be used to transform one version of a file into another.
 		/// </summary>
-		public static string BuildDiffCode (Diff differences) {
+		public static string BuildDiffCode (Differences differences) {
 			var sb = new StringBuilder();
 			int pos = 0;
 			int del = 0;
 			string ins = "";
 
-			foreach (Diff.Fragment frag in differences) {
+			foreach (Differences.Fragment frag in differences) {
 
-				if (frag.Type == Diff.FragmentType.Unchanged) {
+				if (frag.Type == Differences.FragmentType.Unchanged) {
 					pos += del;
 					pos -= ins.Length;
 					if (del > 0 || ins.Length > 0) {
@@ -239,9 +241,9 @@ namespace System.Text {
 					pos += frag.Length;
 					del = 0;
 					ins = "";
-				} else if (frag.Type == Diff.FragmentType.Deleted) {
+				} else if (frag.Type == Differences.FragmentType.Deleted) {
 					del += frag.Length;
-				} else if (frag.Type == Diff.FragmentType.Inserted) {
+				} else if (frag.Type == Differences.FragmentType.Inserted) {
 					pos += frag.Length;
 					ins += frag.SplitPart;
 				} else {

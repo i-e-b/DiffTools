@@ -1,9 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
-namespace System.Text {
-	public class Diff : IEnumerable<Diff.Fragment> {
+namespace DocDiff {
+	public class Differences : IEnumerable<Differences.Fragment> {
 		/// <summary>Maximum RAM to use for optimisation search, in bytes</summary>
 		public int AcceptableRAM {
 			get {
@@ -32,7 +34,7 @@ namespace System.Text {
 		/// <param name="New">New version string (changes to this are 'insertions')</param>
 		/// <param name="Splitter">An expression to break up the two strings by.
 		/// Regex.Split() method is used.</param>
-		public Diff (string Old, string New, Regex Splitter) {
+		public Differences (string Old, string New, Regex Splitter) {
 			if (Splitter == null
 				|| Old == null
 				|| New == null) throw new ArgumentException("Required parameter was null");

@@ -26,7 +26,8 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>
+    </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -38,16 +39,15 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CompatibilityExtensions.cs" />
+    <Compile Include="DMPSettings.cs" />
+    <Compile Include="Implementation\CompatibilityExtensions.cs" />
+    <Compile Include="Implementation\Diff.cs" />
     <Compile Include="DiffMatchPatch.cs" />
-    <Compile Include="DiffMatchPatchTest.cs" />
+    <Compile Include="Tests\DiffMatchPatchTest.cs" />
+    <Compile Include="Implementation\Patch.cs" />
+    <Compile Include="Implementation\Operation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
