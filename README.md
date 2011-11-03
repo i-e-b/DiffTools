@@ -24,3 +24,8 @@ Please note
 -----------
 
 Regex splitters omit the matched parts unless they are in capturing groups. See that the examples in Default.aspx.cs (from the static 'Diff') are all in capturing groups.
+
+*Todo*
+ - Split up diff-match-patch into a sensible class split
+ - unit tests around DocDiff
+ - Comparible performance tests around both libraries, see if there is anything useful to join.
