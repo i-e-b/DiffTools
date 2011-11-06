@@ -1,37 +1,32 @@
 ﻿using System;
+using System.Text;
 
 namespace DiffMatchPatch {
 	public class Diff {
+		///<summary>One of: INSERT, DELETE or EQUAL.</summary>
 		public Operation operation;
-		// One of: INSERT, DELETE or EQUAL.
+		///<summary>The text associated with this diff operation.</summary>
 		public string text;
-		// The text associated with this diff operation.
 
-		/**
-		 * Constructor.  Initializes the diff with the provided values.
-		 * @param operation One of INSERT, DELETE or EQUAL.
-		 * @param text The text being applied.
-		 */
 		public Diff (Operation operation, string text) {
 			// Construct a diff with the specified operation and text.
 			this.operation = operation;
 			this.text = text;
 		}
 
-		/**
-		 * Display a human-readable version of this Diff.
-		 * @return text version.
-		 */
 		public override string ToString () {
 			string prettyText = text.Replace('\n', '\u00b6');
-			return "Diff(" + operation + ",\"" + prettyText + "\")";
+			return sb("Diff(", operation.ToString(), ",\"", prettyText, "\")");
 		}
 
-		/**
-		 * Is this Diff equivalent to another Diff?
-		 * @param d Another Diff to compare against.
-		 * @return true or false.
-		 */
+		private static string sb (params string[] strings) {
+			var s = new StringBuilder();
+			foreach (var s1 in strings) {
+				s.Append(s1);
+			}
+			return s.ToString();
+		}
+
 		public override bool Equals (Object obj) {
 			// If parameter is null return false.
 			if (obj == null) {
@@ -39,22 +34,14 @@ namespace DiffMatchPatch {
 			}
 
 			// If parameter cannot be cast to Diff return false.
-			var p = obj as Diff;
-			if (p == null) {
-				return false;
-			}
+			if (!(obj is Diff)) return false;
+			var p = (Diff) obj;
 
 			// Return true if the fields match.
 			return p.operation == operation && p.text == text;
 		}
 
 		public bool Equals (Diff obj) {
-			// If parameter is null return false.
-			if (obj == null) {
-				return false;
-			}
-
-			// Return true if the fields match.
 			return obj.operation == operation && obj.text == text;
 		}
 

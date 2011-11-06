@@ -11,11 +11,12 @@ namespace Demos {
 			string left = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis.txt"));
 			//string left = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Recombined.txt"));
 
-			string right = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Altered.txt"));
+			//string right = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Altered.txt"));
 			//string right = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Minor_Altered.txt"));
-			//string right = File.ReadAllText(Server.MapPath("~/Examples/TotallyDifferent.txt"));
+			string right = File.ReadAllText(Server.MapPath("~/Examples/TotallyDifferent.txt"));
 
-
+			
+			GC.Collect(3, GCCollectionMode.Forced); // give the algorithm a fair shot...
 			var sw = new System.Diagnostics.Stopwatch();
 			sw.Start();
 

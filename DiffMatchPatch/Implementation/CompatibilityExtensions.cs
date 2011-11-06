@@ -2,14 +2,9 @@
 
 namespace DiffMatchPatch {
 	internal static class CompatibilityExtensions {
-		// JScript splice function
-		public static List<T> Splice<T>(this List<T> input, int start, int count,
-		                                params T[] objects) {
-			List<T> deletedRange = input.GetRange(start, count);
+		public static void Splice<T>(this List<T> input, int start, int count,  params T[] objects) {
 			input.RemoveRange(start, count);
 			input.InsertRange(start, objects);
-
-			return deletedRange;
 		}
 
 		// Java substring function

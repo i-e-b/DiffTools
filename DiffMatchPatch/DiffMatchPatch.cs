@@ -350,6 +350,7 @@ namespace DiffMatchPatch {
 						x2 = v2[k2_offset - 1] + 1;
 					}
 					int y2 = x2 - k2;
+					// todo: this while loop is quite hot. Could a bin search help?
 					while (x2 < text1_length && y2 < text2_length
 						&& text1[text1_length - x2 - 1]
 						== text2[text2_length - y2 - 1]) {
@@ -380,20 +381,23 @@ namespace DiffMatchPatch {
 			}
 			// Diff took too long and hit the deadline or
 			// number of diffs equals number of characters, no commonality at all.
+			// todo: lots of memory thrash generated here.
 			var diffs = new List<Diff> { new Diff(Operation.Delete, text1), new Diff(Operation.Insert, text2) };
 			return diffs;
 		}
 
-		/**
-		 * Given the location of the 'middle snake', split the diff in two parts
-		 * and recurse.
-		 * @param text1 Old string to be diffed.
-		 * @param text2 New string to be diffed.
-		 * @param x Index of split point in text1.
-		 * @param y Index of split point in text2.
-		 * @param deadline Time at which to bail if not yet complete.
-		 * @return LinkedList of Diff objects.
-		 */
+		/// <summary>
+		/// Given the location of the 'middle snake', split the diff in two parts and recurse.
+		/// </summary>
+		/// <param name="text1">Old string to be diffed</param>
+		/// <param name="text2">New string to be diffed</param>
+		/// <param name="x">x Index of split point in text1</param>
+		/// <param name="y">y Index of split point in text2</param>
+		/// <param name="deadline">deadline Time at which to bail if not yet complete</param>
+		/// <returns>List of Diff objects</returns>
+		/// <remarks>
+		/// This is a very hot-spot in the algorithm. Could do with as much optimisation as possible.
+		/// </remarks>
 		private List<Diff> diff_bisectSplit (string text1, string text2,
 			int x, int y, DateTime deadline) {
 			string text1a = text1.Substring(0, x);
@@ -402,6 +406,7 @@ namespace DiffMatchPatch {
 			string text2b = text2.Substring(y);
 
 			// Compute both diffs serially.
+			// todo: lot of memory thrash being generated here.
 			List<Diff> diffs = diff_main(text1a, text2a, false, deadline);
 			List<Diff> diffsb = diff_main(text1b, text2b, false, deadline);
 
@@ -958,7 +963,7 @@ namespace DiffMatchPatch {
 		 * @param diffs List of Diff objects.
 		 */
 		public void diff_cleanupMerge (List<Diff> diffs) {
-			// Add a dummy entry at the end.
+			// Add a dummy entry at the end.   --> hot line here... lots of string concatenation.
 			diffs.Add(new Diff(Operation.Equal, string.Empty));
 			int pointer = 0;
 			int count_delete = 0;
@@ -1018,6 +1023,7 @@ namespace DiffMatchPatch {
 									count_delete + count_insert,
 									new Diff(Operation.Delete, text_delete));
 							} else {
+								// Very hot line here... lots of memory thrash.
 								diffs.Splice(pointer - count_delete - count_insert,
 									count_delete + count_insert,
 									new Diff(Operation.Delete, text_delete),
