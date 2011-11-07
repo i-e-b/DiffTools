@@ -19,13 +19,21 @@ DiffCode
 The tools in [DiffCode.cs] can be used to analyse differences, and store/retrieve various revisions of files.
 The Decode/Encode methods have variants which are suitable for data transmission and database storage.
 
-
 Please note
 -----------
 
 Regex splitters omit the matched parts unless they are in capturing groups. See that the examples in Default.aspx.cs (from the static 'Diff') are all in capturing groups.
 
+Ongoing work
+============
+
 ### Todo
-- Split up diff-match-patch into a sensible class split
 - unit tests around DocDiff
-- Comparible performance tests around both libraries, see if there is anything useful to join.
+
+### Improvements to DMP
+- improve memory thrash in the cases of search-and-replace differences and delete-and-rewrite differences by
+  deferring string splitting until after differences are computed (should be able to work with indexes alone
+  and post-process the actual edits afterwards)
+
+### Improvements to DocDiff
+- Include some of the divide-and-conquer and early group rejection from DMP.
