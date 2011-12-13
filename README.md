@@ -1,5 +1,7 @@
 My own diff project, plus Neil Fraser's diff-match-patch in C# split into classes
 
+For Neil's project, see http://code.google.com/p/google-diff-match-patch/
+
 Doc Diff
 ========
 

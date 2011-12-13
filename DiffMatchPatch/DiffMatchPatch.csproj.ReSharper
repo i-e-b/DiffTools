@@ -1,5 +1,5 @@
 <Configuration>
   <NamespaceFolders>
-    <SkipFolder>CEF14802-E9A6-421D-B16D-BDFE3202764F/d:Implementation</SkipFolder>
+    <SkipFolder>CEF14802-E9A6-421D-B16D-BDFE3202764F/d:Structures</SkipFolder>
   </NamespaceFolders>
 </Configuration>

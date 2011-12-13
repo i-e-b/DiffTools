@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace DocDiff {
-	public class Differences : IEnumerable<Differences.Fragment> {
+	public class Differences : IEnumerable<Fragment> {
 		/// <summary>Maximum RAM to use for optimisation search, in bytes</summary>
 		public int AcceptableRAM {
 			get {
@@ -95,10 +94,14 @@ namespace DocDiff {
 		/// </summary>
 		private static int[] DiffCodes (string[] fragments, bool ignoreCase) {
 			var codes = new int[fragments.Length];
-
-			for (int n = 0; n < fragments.Length; n++) {
-				if (ignoreCase) codes[n] = fragments[n].ToLowerInvariant().GetHashCode();
-				else codes[n] = fragments[n].GetHashCode();
+			if (ignoreCase) {
+				for (int n = 0; n < fragments.Length; n++) {
+					codes[n] = fragments[n].ToLowerInvariant().GetHashCode();
+				}
+			} else {
+				for (int n = 0; n < fragments.Length; n++) {
+					codes[n] = fragments[n].GetHashCode();
+				}
 			}
 
 			return codes;
@@ -280,19 +283,6 @@ namespace DocDiff {
 			}
 		}
 
-		/// <summary>details of one difference.</summary>
-		protected struct DiffChange {
-			/// <summary>Start position in Data A.</summary>
-			public int StartA;
-			/// <summary>Start positionin Data B.</summary>
-			public int StartB;
-
-			/// <summary>Number of changes in Data A.</summary>
-			public int deletedA;
-			/// <summary>Number of changes in Data B.</summary>
-			public int insertedB;
-		}
-
 		/// <summary>Shortest Middle Snake Return Data</summary>
 		private struct SMSRD {
 			internal int x, y;
@@ -307,57 +297,5 @@ namespace DocDiff {
 
 		#endregion
 		#endregion
-
-		/// <summary>
-		/// A class to wrap up document changes.
-		/// </summary>
-		public class Fragment {
-			public FragmentType Type { get; set; }
-			public string TypeString {
-				get {
-					switch (Type) {
-						case FragmentType.Deleted: return "d";
-						case FragmentType.Inserted: return "i";
-						case FragmentType.Unchanged: return "u";
-						default: return null;
-					}
-				}
-			}
-			public string SplitPart {
-				get { return sb.ToString(); }
-			}
-			public int Length { get { return sb.Length; } }
-			public int Position { get; set; }
-
-			private readonly StringBuilder sb;
-
-			public Fragment (FragmentType ThisType, string Part, int Location) {
-				sb = new StringBuilder();
-				Type = ThisType;
-				Position = Location;
-				sb.Append(Part);
-			}
-
-			public Fragment (FragmentType ThisType, int Location) {
-				sb = new StringBuilder();
-				Type = ThisType;
-				Position = Location;
-			}
-
-			public void Join (string Part) {
-				sb.Append(Part);
-			}
-		}
-	}
-	internal class DiffData {
-		internal int Length;
-		internal int[] Data;
-		internal bool[] Modified;
-
-		internal DiffData (int[] initData) {
-			Data = initData;
-			Length = initData.Length;
-			Modified = new bool[Length + 2];
-		}
 	}
 }

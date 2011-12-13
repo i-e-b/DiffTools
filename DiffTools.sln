@@ -9,8 +9,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Demos", "Demos\Demos.csproj
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{9893F12F-11A1-41D0-86FF-9C9B4A24E934}"
 	ProjectSection(SolutionItems) = preProject
+		Next Steps.md = Next Steps.md
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Specifications", "Specifications", "{9792C3EA-51CC-4BC9-AA56-31581B6B9EEA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DMP.Specs", "DMP.Specs\DMP.Specs.csproj", "{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,8 +57,21 @@ Global
 		{9EF6075B-2E10-479C-9F63-C4AC82CE85B1}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{9EF6075B-2E10-479C-9F63-C4AC82CE85B1}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{9EF6075B-2E10-479C-9F63-C4AC82CE85B1}.Release|x86.ActiveCfg = Release|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6993D9BB-95B0-48E4-8FFF-198C8DEF0042} = {9792C3EA-51CC-4BC9-AA56-31581B6B9EEA}
 	EndGlobalSection
 EndGlobal

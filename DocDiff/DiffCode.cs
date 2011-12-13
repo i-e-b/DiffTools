@@ -46,7 +46,7 @@ namespace DocDiff {
 		/// Build and return a revision by applying a set of DiffCodes to a base version.
 		/// DiffCodes should be from CompressedDiffCode() or BuildDiffCode().
 		/// </summary>
-		public static List<Differences.Fragment> BuildChanges (string BaseRevision, string DiffCodes) {
+		public static List<Fragment> BuildChanges (string BaseRevision, string DiffCodes) {
 			// Decide if it's compressed or not, and send to appropriate decoder.
 			return DiffCodes.StartsWith("[DCMP]") 
 				? BuildChanges(BaseRevision, Convert.FromBase64String(DiffCodes.Substring(6))) 
@@ -57,7 +57,7 @@ namespace DocDiff {
 		/// Build and return a revision by applying a set of DiffCodes to a base version.
 		/// DiffCodes should be from StorageDiffCode().
 		/// </summary>
-		public static List<Differences.Fragment> BuildChanges (string BaseRevision, byte[] DiffCodes) {
+		public static List<Fragment> BuildChanges (string BaseRevision, byte[] DiffCodes) {
 			// Decompress and send to real decoder.
 			var @in = new MemoryStream(DiffCodes); // this will receive the compressed code
 			var filter = new DeflateStream(@in, CompressionMode.Decompress);
@@ -73,18 +73,18 @@ namespace DocDiff {
 
 		#region Inner Workings
 
-		private static List<Differences.Fragment> DecodeRevisionFragments (string BaseRevision, string DiffCodes) {
-			var @out = new List<Differences.Fragment>();
+		private static List<Fragment> DecodeRevisionFragments (string BaseRevision, string DiffCodes) {
+			var @out = new List<Fragment>();
 
 			if (String.IsNullOrEmpty(DiffCodes)) {
 				// no changes.
-				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
+				@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
 				return @out;
 			}
 			string[] codes = DiffCodes.Split(new[] { (char)31 }, StringSplitOptions.RemoveEmptyEntries);
 			if (codes.Length < 1) {
 				// no changes.
-				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
+				@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
 				return @out;
 			}
 
@@ -94,7 +94,7 @@ namespace DocDiff {
 			DecodeDiffCode(codes[0], out pos, out del, out ins);
 
 			if (pos > 0) { // write leading text
-				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(0, pos), 0));
+				@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(0, pos), 0));
 			}
 
 			foreach (string code in codes) {
@@ -110,7 +110,7 @@ namespace DocDiff {
 					}
 					if (l >= 0) {
 						string skip = BaseRevision.Substring(old_pos, l);
-						@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, skip, old_pos));
+						@out.Add(new Fragment(Differences.FragmentType.Unchanged, skip, old_pos));
 					} else {
 						// error!
 						throw new Exception("Diff code does not match text - Can't skip!");
@@ -119,18 +119,18 @@ namespace DocDiff {
 
 				// Skip deleted text
 				string delstr = BaseRevision.Substring(pos, del);
-				@out.Add(new Differences.Fragment(Differences.FragmentType.Deleted, delstr, pos));
+				@out.Add(new Fragment(Differences.FragmentType.Deleted, delstr, pos));
 				pos += del;
 
 				// Write any inserted text
 				if (ins.Length > 0) {
-					@out.Add(new Differences.Fragment(Differences.FragmentType.Inserted, ins, pos));
+					@out.Add(new Fragment(Differences.FragmentType.Inserted, ins, pos));
 				}
 			}
 
 			// Write any unchanged text at the end.
 			if (pos < BaseRevision.Length) {
-				@out.Add(new Differences.Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(pos), pos));
+				@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(pos), pos));
 			}
 
 			return @out;
@@ -140,7 +140,7 @@ namespace DocDiff {
 		/// Build and return a revision by applying a set of DiffCodes to a base version
 		/// </summary>
 		private static string DecodeRevision (string BaseRevision, string DiffCodes) {
-			List<Differences.Fragment> frags = DecodeRevisionFragments(BaseRevision, DiffCodes);
+			List<Fragment> frags = DecodeRevisionFragments(BaseRevision, DiffCodes);
 
 			var sb = new StringBuilder();
 			foreach (var frag in frags) {
@@ -230,7 +230,7 @@ namespace DocDiff {
 			int del = 0;
 			string ins = "";
 
-			foreach (Differences.Fragment frag in differences) {
+			foreach (Fragment frag in differences) {
 
 				if (frag.Type == Differences.FragmentType.Unchanged) {
 					pos += del;

@@ -10,9 +10,9 @@ namespace Demos {
 		protected void Page_Load (object sender, EventArgs e) {
 			string left = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis.txt"));
 			
-			//string right = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Altered.txt"));
+			string right = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Altered.txt"));
 			//string right = File.ReadAllText(Server.MapPath("~/Examples/DeOfficiis_Minor_Altered.txt"));
-			string right = File.ReadAllText(Server.MapPath("~/Examples/TotallyDifferent.txt"));
+			//string right = File.ReadAllText(Server.MapPath("~/Examples/TotallyDifferent.txt"));
 
 			GC.Collect(3, GCCollectionMode.Forced); // give the algorithm a fair shot...
 			var sw = new System.Diagnostics.Stopwatch();
@@ -30,7 +30,7 @@ namespace Demos {
 
 			Repeater1.DataBind();
 
-			Response.Write("DocDiff took " + sw.Elapsed.TotalSeconds + " seconds<br/>");
+			Response.Write("Diff-Match-Patch took " + sw.Elapsed.TotalSeconds + " seconds<br/>");
 
 		}
 	}

@@ -41,13 +41,14 @@
     <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Patch.cs" />
+    <Compile Include="Match.cs" />
     <Compile Include="DMPSettings.cs" />
-    <Compile Include="Implementation\CompatibilityExtensions.cs" />
-    <Compile Include="Implementation\Diff.cs" />
-    <Compile Include="DiffMatchPatch.cs" />
-    <Compile Include="Tests\DiffMatchPatchTest.cs" />
-    <Compile Include="Implementation\Patch.cs" />
-    <Compile Include="Implementation\Operation.cs" />
+    <Compile Include="Structures\CompatibilityExtensions.cs" />
+    <Compile Include="Structures\Diff.cs" />
+    <Compile Include="Diff.cs" />
+    <Compile Include="Structures\Patch.cs" />
+    <Compile Include="Structures\Operation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
