@@ -4,6 +4,7 @@ obj
 *.suo
 *.cache
 _ReSharper.*
+/.idea
 /DocDiff/obj
 /DocDiff/bin
 packages
