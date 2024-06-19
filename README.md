@@ -1,6 +1,8 @@
 Doc Diff
 ========
 
+Available on NuGet: https://www.nuget.org/packages/DocDiff
+
 What is it?
 -----------
 
