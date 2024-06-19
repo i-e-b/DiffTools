@@ -78,14 +78,16 @@ public static class DiffCode
 
 	private static List<Fragment> DecodeRevisionFragments (string baseRevision, string diffCodes) {
 		var @out = new List<Fragment>();
+		var limit = baseRevision.Length - 1;
 
 		if (string.IsNullOrEmpty(diffCodes)) {
 			// no changes.
 			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision, 0));
 			return @out;
 		}
-		var codes = diffCodes.Split(new[] { CodeMarker }, StringSplitOptions.RemoveEmptyEntries);
-		if (codes.Length < 1) {
+		
+		var codes = SplitCodes(diffCodes);
+		if (codes.Count < 1) {
 			// no changes.
 			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision, 0));
 			return @out;
@@ -121,10 +123,18 @@ public static class DiffCode
 			}
 
 			// Skip deleted text
-			var delStr = baseRevision.Substring(pos, del);
-			if (del > 0)
+			if (pos + del > limit)
 			{
-				@out.Add(new Fragment(Differences.FragmentType.Deleted, delStr, rightPos));
+				if (pos > limit) throw new Exception($"Failed to decode changes. [{pos}..{pos + del}] is out of the input range [0..{limit}]");
+				
+				var delStr = baseRevision.Substring(pos);
+				if (del > 0) @out.Add(new Fragment(Differences.FragmentType.Deleted, delStr, rightPos));
+				pos += del;
+			}
+			else
+			{
+				var delStr = baseRevision.Substring(pos, del);
+				if (del > 0) @out.Add(new Fragment(Differences.FragmentType.Deleted, delStr, rightPos));
 				pos += del;
 			}
 
@@ -142,6 +152,40 @@ public static class DiffCode
 		}
 
 		return @out;
+	}
+
+	/// <summary>
+	/// Split codes, as written by <see cref="WriteDiffCode"/>.
+	/// These two must agree on CodeMarker and the escape sequence
+	/// </summary>
+	private static List<string> SplitCodes(string diffCodes)
+	{
+		var sb = new StringBuilder();
+		var output = new List<string>();
+		for (var index = 0; index < diffCodes.Length; index++)
+		{
+			var c = diffCodes[index];
+			if (c is CodeMarker)
+			{
+				// if the next character is also a CodeMarker, we have an escape sequence
+				if (index < diffCodes.Length - 1 && diffCodes[index+1] == CodeMarker)
+				{
+					sb.Append(c); // write the escaped char
+					index++; // skip the duplication
+				}
+				else
+				{
+					// send any waiting part
+					if (sb.Length > 0) output.Add(sb.ToString());
+					sb.Clear();
+				}
+			}
+			else sb.Append(c);
+		}
+
+		// Write any trailing part
+		if (sb.Length > 0) output.Add(sb.ToString());
+		return output;
 	}
 
 	/// <summary>
@@ -287,7 +331,11 @@ public static class DiffCode
 		}
 		sb.Append(InsertMarker);
 		if (!string.IsNullOrEmpty(ins)) {
-			sb.Append(ins.Replace(CodeMarker, ' ')); // TODO: improve this: proper escape sequence
+			foreach (var c in ins)
+			{
+				if (c == CodeMarker) sb.Append(CodeMarker); // escape the code marker by doubling. See `SplitCodes()`
+				sb.Append(c);
+			}
 		}
 	}
 
@@ -295,7 +343,7 @@ public static class DiffCode
 	#endregion
 
 	private const string CompressionMarker = "[DCMP]";
-	private const char CodeMarker = '^';//(char)31;
+	private const char CodeMarker = '^';
 	private const char RangeMarker = '-';
 	private const char InsertMarker = ';';
 }

@@ -82,4 +82,32 @@ public class BasicDocumentChangeTests
             }
         }
     }
+
+    [Test]
+    public void can_get_positions_for_fragments()
+    {
+        var fragments = new Differences(Samples.ShortLeft, Samples.ShortRight, Differences.PerCharacter).ToList();
+
+        var pos = 0;
+        foreach (var change in fragments)
+        {
+            switch (change.Type)
+            {
+                case Differences.FragmentType.Unchanged:
+                    Assert.That(change.Position, Is.EqualTo(pos));
+                    pos += change.Length;
+                    break;
+                case Differences.FragmentType.Deleted:
+                    Assert.That(change.Position, Is.EqualTo(pos));
+                    break;
+                case Differences.FragmentType.Inserted:
+                    Assert.That(change.Position, Is.EqualTo(pos));
+                    pos += change.Length;
+                    break;
+                default:
+                    Assert.Fail("unknown type");
+                    break;
+            }
+        }
+    }
 }

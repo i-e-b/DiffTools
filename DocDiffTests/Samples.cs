@@ -1,4 +1,6 @@
-﻿namespace DocDiffTests;
+﻿using System.Text;
+
+namespace DocDiffTests;
 
 internal abstract class Samples
 {
@@ -148,4 +150,37 @@ Gomorrah? But 'The Crossed Harpoons' and 'The Sword-Fish' — this, then
 must needs be the sign of 'The Trap'. However, I picked myself up and
 hearing a loud voice within, pushed on and opened a second, interior
 door.";
+
+
+    public static string ComplexLeft {
+        get
+        {
+            var sb = new StringBuilder();
+            for (int i = 32; i < 255; i++)
+            {
+                if (i >= 0x7F) sb.Append((char)(i + 33));
+                else sb.Append((char)i);
+            }
+
+            return sb.ToString();
+        }
+    }
+
+    public static string ComplexRight {
+        get {
+            var sb = new StringBuilder();
+            for (int i = 32; i < 255; i++)
+            {
+                if ((i % 9) == 0) sb.Append("^!");
+                else if ((i % 13) == 0) sb.Append("x");
+                else
+                {
+                    if (i >= 0x7F) sb.Append((char)(i + 33));
+                    else sb.Append((char)i);
+                }
+            }
+
+            return sb.ToString();
+        }
+    }
 }
