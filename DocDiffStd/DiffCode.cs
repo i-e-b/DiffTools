@@ -98,7 +98,7 @@ public static class DiffCode
 			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision.Substring(0, pos), 0));
 		}
 
-		var drift = 0;
+		var rightPos = pos;
 		foreach (var code in codes) {
 			var oldPos = pos;
 			// get code
@@ -112,7 +112,8 @@ public static class DiffCode
 				}
 				if (l >= 0) {
 					var skip = baseRevision.Substring(oldPos, l);
-					@out.Add(new Fragment(Differences.FragmentType.Unchanged, skip, oldPos - drift));
+					@out.Add(new Fragment(Differences.FragmentType.Unchanged, skip, rightPos));
+					rightPos += l;
 				} else {
 					// error!
 					throw new Exception("Diff code does not match text - Can't skip!");
@@ -120,22 +121,24 @@ public static class DiffCode
 			}
 
 			// Skip deleted text
-			var delstr = baseRevision.Substring(pos, del);
-			@out.Add(new Fragment(Differences.FragmentType.Deleted, delstr, pos - drift)); 
-			if (del > 0) drift++;
+			var delStr = baseRevision.Substring(pos, del);
+			if (del > 0)
+			{
+				@out.Add(new Fragment(Differences.FragmentType.Deleted, delStr, rightPos));
+				pos += del;
+			}
 
 			// Write any inserted text
 			if (ins.Length > 0)
 			{
-				@out.Add(new Fragment(Differences.FragmentType.Inserted, ins, pos - drift + 1));
+				@out.Add(new Fragment(Differences.FragmentType.Inserted, ins, rightPos));
+				rightPos += ins.Length;
 			}
-			
-			pos += del;
 		}
 
 		// Write any unchanged text at the end.
 		if (pos < baseRevision.Length) {
-			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision.Substring(pos), pos));
+			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision.Substring(pos), rightPos));
 		}
 
 		return @out;
