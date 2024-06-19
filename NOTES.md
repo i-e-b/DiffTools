@@ -1,3 +1,13 @@
+Credits
+=======
+
+This repository contains a copy of Neil Fraser's diff-match-patch in C# split into classes
+
+For Neil's project, see http://code.google.com/p/google-diff-match-patch/
+
+The NuGet package does not contain this code.
+
+
 Next things to do
 =================
 
@@ -6,4 +16,3 @@ Next things to do
     * ( http://stevehanov.ca/blog/?id=146 ) 
 
 * Pull latest version of DMP, merge into the separated structure
-* Refactor Diff to be like DocDiff's

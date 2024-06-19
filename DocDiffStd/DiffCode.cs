@@ -22,7 +22,7 @@ public static class DiffCode
 	public static string BuildRevision (string baseRevision, string diffCodes) {
 		// Decide if it's compressed or not, and send to appropriate decoder.
 		return diffCodes.StartsWith(CompressionMarker) 
-			? BuildRevision(baseRevision, Convert.FromBase64String(diffCodes[6..])) 
+			? BuildRevision(baseRevision, Convert.FromBase64String(diffCodes.Substring(CompressionMarker.Length))) 
 			: DecodeRevision(baseRevision, diffCodes);
 	}
 
@@ -41,7 +41,9 @@ public static class DiffCode
 			@out.Add((byte)b);
 			b = filter.ReadByte();
 		}
-		return DecodeRevision(baseRevision, Encoding.UTF8.GetString(@out.ToArray()));
+		
+		var bytes = @out.ToArray();
+		return DecodeRevision(baseRevision, Encoding.UTF8.GetString(bytes, 0, bytes.Length));
 	}
 
 
@@ -52,7 +54,7 @@ public static class DiffCode
 	public static List<Fragment> BuildChanges (string baseRevision, string diffCodes) {
 		// Decide if it's compressed or not, and send to appropriate decoder.
 		return diffCodes.StartsWith(CompressionMarker) 
-			? BuildChanges(baseRevision, Convert.FromBase64String(diffCodes[6..])) 
+			? BuildChanges(baseRevision, Convert.FromBase64String(diffCodes.Substring(CompressionMarker.Length))) 
 			: DecodeRevisionFragments(baseRevision, diffCodes);
 	}
 
@@ -71,7 +73,9 @@ public static class DiffCode
 			@out.Add((byte)b);
 			b = filter.ReadByte();
 		}
-		return DecodeRevisionFragments(baseRevision, Encoding.UTF8.GetString(@out.ToArray()));
+
+		var bytes = @out.ToArray();
+		return DecodeRevisionFragments(baseRevision, Encoding.UTF8.GetString(bytes, 0, bytes.Length));
 	}
 
 	#region Inner Workings
@@ -234,7 +238,7 @@ public static class DiffCode
 		if (string.IsNullOrEmpty(iStr)) {
 			inserts = "";
 		} else {
-			inserts = iStr;
+			inserts = iStr!;
 		}
 	}
 	#endregion
