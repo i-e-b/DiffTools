@@ -7,39 +7,41 @@ using System.Text;
 namespace DocDiffStd;
 
 /// <summary>
-/// Tools for manipulating the output of System.Text.Diff package.
+/// Create and use encodings of <see cref="Fragment"/>s, using the output of <see cref="Differences"/>.
+/// <p/>
+/// This can be used to make, store, and apply patch sets.
 /// </summary>
-public static class DiffCode {
-
+public static class DiffCode
+{
 	#region Decode
 
 	/// <summary>
 	/// Build and return a revision by applying a set of DiffCodes to a base version.
 	/// DiffCodes should be from CompressedDiffCode() or BuildDiffCode().
 	/// </summary>
-	public static string BuildRevision (string BaseRevision, string DiffCodes) {
+	public static string BuildRevision (string baseRevision, string diffCodes) {
 		// Decide if it's compressed or not, and send to appropriate decoder.
-		return DiffCodes.StartsWith("[DCMP]") 
-			? BuildRevision(BaseRevision, Convert.FromBase64String(DiffCodes.Substring(6))) 
-			: DecodeRevision(BaseRevision, DiffCodes);
+		return diffCodes.StartsWith(CompressionMarker) 
+			? BuildRevision(baseRevision, Convert.FromBase64String(diffCodes[6..])) 
+			: DecodeRevision(baseRevision, diffCodes);
 	}
 
 	/// <summary>
 	/// Build and return a revision by applying a set of DiffCodes to a base version.
 	/// DiffCodes should be from StorageDiffCode().
 	/// </summary>
-	public static string BuildRevision (string BaseRevision, byte[] DiffCodes) {
+	public static string BuildRevision (string baseRevision, byte[] diffCodes) {
 		// Decompress and send to real decoder.
-		var @in = new MemoryStream(DiffCodes); // this will receive the compressed code
+		var @in = new MemoryStream(diffCodes); // this will receive the compressed code
 		var filter = new DeflateStream(@in, CompressionMode.Decompress);
 
-		var @out = new List<byte>(DiffCodes.Length);
-		int b = filter.ReadByte();
+		var @out = new List<byte>(diffCodes.Length);
+		var b = filter.ReadByte();
 		while (b >= 0) {
 			@out.Add((byte)b);
 			b = filter.ReadByte();
 		}
-		return DecodeRevision(BaseRevision, Encoding.UTF8.GetString(@out.ToArray()));
+		return DecodeRevision(baseRevision, Encoding.UTF8.GetString(@out.ToArray()));
 	}
 
 
@@ -47,71 +49,70 @@ public static class DiffCode {
 	/// Build and return a revision by applying a set of DiffCodes to a base version.
 	/// DiffCodes should be from CompressedDiffCode() or BuildDiffCode().
 	/// </summary>
-	public static List<Fragment> BuildChanges (string BaseRevision, string DiffCodes) {
+	public static List<Fragment> BuildChanges (string baseRevision, string diffCodes) {
 		// Decide if it's compressed or not, and send to appropriate decoder.
-		return DiffCodes.StartsWith("[DCMP]") 
-			? BuildChanges(BaseRevision, Convert.FromBase64String(DiffCodes.Substring(6))) 
-			: DecodeRevisionFragments(BaseRevision, DiffCodes);
+		return diffCodes.StartsWith(CompressionMarker) 
+			? BuildChanges(baseRevision, Convert.FromBase64String(diffCodes[6..])) 
+			: DecodeRevisionFragments(baseRevision, diffCodes);
 	}
 
 	/// <summary>
 	/// Build and return a revision by applying a set of DiffCodes to a base version.
 	/// DiffCodes should be from StorageDiffCode().
 	/// </summary>
-	public static List<Fragment> BuildChanges (string BaseRevision, byte[] DiffCodes) {
+	public static List<Fragment> BuildChanges (string baseRevision, byte[] diffCodes) {
 		// Decompress and send to real decoder.
-		var @in = new MemoryStream(DiffCodes); // this will receive the compressed code
+		var @in = new MemoryStream(diffCodes); // this will receive the compressed code
 		var filter = new DeflateStream(@in, CompressionMode.Decompress);
 
-		var @out = new List<byte>(DiffCodes.Length);
-		int b = filter.ReadByte();
+		var @out = new List<byte>(diffCodes.Length);
+		var b = filter.ReadByte();
 		while (b >= 0) {
 			@out.Add((byte)b);
 			b = filter.ReadByte();
 		}
-		return DecodeRevisionFragments(BaseRevision, Encoding.UTF8.GetString(@out.ToArray()));
+		return DecodeRevisionFragments(baseRevision, Encoding.UTF8.GetString(@out.ToArray()));
 	}
 
 	#region Inner Workings
 
-	private static List<Fragment> DecodeRevisionFragments (string BaseRevision, string DiffCodes) {
+	private static List<Fragment> DecodeRevisionFragments (string baseRevision, string diffCodes) {
 		var @out = new List<Fragment>();
 
-		if (string.IsNullOrEmpty(DiffCodes)) {
+		if (string.IsNullOrEmpty(diffCodes)) {
 			// no changes.
-			@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
+			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision, 0));
 			return @out;
 		}
-		string[] codes = DiffCodes.Split(new[] { (char)31 }, StringSplitOptions.RemoveEmptyEntries);
+		var codes = diffCodes.Split(new[] { CodeMarker }, StringSplitOptions.RemoveEmptyEntries);
 		if (codes.Length < 1) {
 			// no changes.
-			@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision, 0));
+			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision, 0));
 			return @out;
 		}
 
 
-		int pos, del;
-		string ins;
-		DecodeDiffCode(codes[0], out pos, out del, out ins);
+		DecodeDiffCode(codes[0], out var pos, out var del, out var ins);
 
 		if (pos > 0) { // write leading text
-			@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(0, pos), 0));
+			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision.Substring(0, pos), 0));
 		}
 
-		foreach (string code in codes) {
-			int old_pos = pos;
+		var drift = 0;
+		foreach (var code in codes) {
+			var oldPos = pos;
 			// get code
 			DecodeDiffCode(code, out pos, out del, out ins);
 
 			// write unchanged text
-			if (pos > old_pos) {
-				int l = (pos - old_pos);
-				if (l + old_pos >= BaseRevision.Length) {
-					l = (BaseRevision.Length - old_pos) - 1;
+			if (pos > oldPos) {
+				var l = (pos - oldPos);
+				if (l + oldPos >= baseRevision.Length) {
+					l = (baseRevision.Length - oldPos) - 1;
 				}
 				if (l >= 0) {
-					string skip = BaseRevision.Substring(old_pos, l);
-					@out.Add(new Fragment(Differences.FragmentType.Unchanged, skip, old_pos));
+					var skip = baseRevision.Substring(oldPos, l);
+					@out.Add(new Fragment(Differences.FragmentType.Unchanged, skip, oldPos - drift));
 				} else {
 					// error!
 					throw new Exception("Diff code does not match text - Can't skip!");
@@ -119,19 +120,22 @@ public static class DiffCode {
 			}
 
 			// Skip deleted text
-			string delstr = BaseRevision.Substring(pos, del);
-			@out.Add(new Fragment(Differences.FragmentType.Deleted, delstr, pos));
-			pos += del;
+			var delstr = baseRevision.Substring(pos, del);
+			@out.Add(new Fragment(Differences.FragmentType.Deleted, delstr, pos - drift)); 
+			if (del > 0) drift++;
 
 			// Write any inserted text
-			if (ins.Length > 0) {
-				@out.Add(new Fragment(Differences.FragmentType.Inserted, ins, pos));
+			if (ins.Length > 0)
+			{
+				@out.Add(new Fragment(Differences.FragmentType.Inserted, ins, pos - drift + 1));
 			}
+			
+			pos += del;
 		}
 
 		// Write any unchanged text at the end.
-		if (pos < BaseRevision.Length) {
-			@out.Add(new Fragment(Differences.FragmentType.Unchanged, BaseRevision.Substring(pos), pos));
+		if (pos < baseRevision.Length) {
+			@out.Add(new Fragment(Differences.FragmentType.Unchanged, baseRevision.Substring(pos), pos));
 		}
 
 		return @out;
@@ -140,13 +144,13 @@ public static class DiffCode {
 	/// <summary>
 	/// Build and return a revision by applying a set of DiffCodes to a base version
 	/// </summary>
-	private static string DecodeRevision (string BaseRevision, string DiffCodes) {
-		List<Fragment> frags = DecodeRevisionFragments(BaseRevision, DiffCodes);
+	private static string DecodeRevision (string baseRevision, string diffCodes) {
+		var frags = DecodeRevisionFragments(baseRevision, diffCodes);
 
 		var sb = new StringBuilder();
 		foreach (var frag in frags) {
 			if (frag.Type == Differences.FragmentType.Deleted) continue;
-			sb.Append(frag.SplitPart);
+			sb.Append(frag.Content);
 		}
 
 		return sb.ToString();
@@ -155,35 +159,35 @@ public static class DiffCode {
 	/// <summary>
 	/// Work out the meaning of a diff code
 	/// </summary>
-	private static void DecodeDiffCode (string Code, out int Position, out int Deletes, out string Inserts) {
-		if (string.IsNullOrEmpty(Code)) {
+	private static void DecodeDiffCode (string code, out int position, out int deletes, out string inserts) {
+		if (string.IsNullOrEmpty(code)) {
 			throw new Exception("Empty codes not allowed");
 		}
-		int s1 = Code.IndexOf('-',1); // pos/del
-		int s2 = Code.IndexOf(';'); // [pos/del] / ins
+		var s1 = code.IndexOf(RangeMarker,1); // pos/del
+		var s2 = code.IndexOf(InsertMarker); // [pos/del] / ins
 
 		if (s1 < 0 || s2 < 0) throw new ArgumentException("Code was invalid");
 
-		var pStr = Code.Substring(0, s1).Trim();
-		var dStr = Code.Substring(s1+1, (s2-s1)-1).Trim();
-		var iStr = (s2+1 >= Code.Length) ? (null) : (Code.Substring(s2 + 1)); // Never trim this!!
+		var pStr = code.Substring(0, s1).Trim();
+		var dStr = code.Substring(s1+1, (s2-s1)-1).Trim();
+		var iStr = (s2+1 >= code.Length) ? (null) : (code.Substring(s2 + 1)); // Never trim this!!
 
 		if (string.IsNullOrEmpty(pStr)) {
-			Position = 0;
+			position = 0;
 		} else {
-			Position = int.Parse(pStr);
+			position = int.Parse(pStr);
 		}
 
 		if (string.IsNullOrEmpty(dStr)) {
-			Deletes = 0;
+			deletes = 0;
 		} else {
-			Deletes = int.Parse(dStr);
+			deletes = int.Parse(dStr);
 		}
 
 		if (string.IsNullOrEmpty(iStr)) {
-			Inserts = "";
+			inserts = "";
 		} else {
-			Inserts = iStr;
+			inserts = iStr;
 		}
 	}
 	#endregion
@@ -193,29 +197,31 @@ public static class DiffCode {
 
 	#region Encode
 	/// <summary>
-	/// Returns a highly compressed version of BuildDiffCode()
+	/// Returns a compacted version of BuildDiffCode()
 	/// for textual storage and transmission.
 	/// </summary>
 	public static string CompressedDiffCode (Differences differences) {
 		var @out = new MemoryStream(); // this will receive the compressed code
 		var filter = new DeflateStream(@out, CompressionMode.Compress);
 
-		byte[] buffer = Encoding.UTF8.GetBytes(BuildDiffCode (differences));
+		var buffer = Encoding.UTF8.GetBytes(BuildDiffCode (differences));
 		filter.Write(buffer, 0, buffer.Length);
+		filter.Flush();
 
-		return "[DCMP]" + Convert.ToBase64String(@out.ToArray()); // this is 7-bit safe and robust for storage
+		return CompressionMarker + Convert.ToBase64String(@out.ToArray()); // this is 7-bit safe and robust for storage
 	}
 
 	/// <summary>
-	/// Returns a highly compressed version of BuildDiffCode()
+	/// Returns a compacted version of BuildDiffCode()
 	/// for binary storage
 	/// </summary>
 	public static byte[] StorageDiffCode (Differences differences) {
 		var @out = new MemoryStream(); // this will receive the compressed code
 		var filter = new DeflateStream(@out, CompressionMode.Compress);
 
-		byte[] buffer = Encoding.UTF8.GetBytes(BuildDiffCode(differences));
+		var buffer = Encoding.UTF8.GetBytes(BuildDiffCode(differences));
 		filter.Write(buffer, 0, buffer.Length);
+		filter.Flush();
 
 		return @out.ToArray();
 	}
@@ -223,30 +229,37 @@ public static class DiffCode {
 	/// <summary>
 	/// Build a code that can be used to transform one version of a file into another.
 	/// </summary>
-	public static string BuildDiffCode (Differences differences) {
+	public static string BuildDiffCode (IEnumerable<Fragment> differences) {
 		var sb = new StringBuilder();
-		int pos = 0;
-		int del = 0;
-		string ins = "";
+		var pos = 0;
+		var del = 0;
+		var ins = "";
 
-		foreach (Fragment frag in differences) {
-
-			if (frag.Type == Differences.FragmentType.Unchanged) {
-				pos += del;
-				pos -= ins.Length;
-				if (del > 0 || ins.Length > 0) {
-					WriteDiffCode(sb, pos-del, del, ins);
+		foreach (var frag in differences)
+		{
+			switch (frag.Type)
+			{
+				case Differences.FragmentType.Unchanged:
+				{
+					pos += del;
+					pos -= ins.Length;
+					if (del > 0 || ins.Length > 0) {
+						WriteDiffCode(sb, pos-del, del, ins);
+					}
+					pos += frag.Length;
+					del = 0;
+					ins = "";
+					break;
 				}
-				pos += frag.Length;
-				del = 0;
-				ins = "";
-			} else if (frag.Type == Differences.FragmentType.Deleted) {
-				del += frag.Length;
-			} else if (frag.Type == Differences.FragmentType.Inserted) {
-				pos += frag.Length;
-				ins += frag.SplitPart;
-			} else {
-				throw new Exception("broken frag type");
+				case Differences.FragmentType.Deleted:
+					del += frag.Length;
+					break;
+				case Differences.FragmentType.Inserted:
+					pos += frag.Length;
+					ins += frag.Content;
+					break;
+				default:
+					throw new Exception("broken frag type");
 			}
 		}
 
@@ -262,20 +275,24 @@ public static class DiffCode {
 	/// <summary>Used by BuildDiffCode()</summary>
 	private static void WriteDiffCode (StringBuilder sb, int pos, int del, string ins) {
 		if (del == 0 && string.IsNullOrEmpty(ins)) return;
-		sb.Append((char)31);
-		int p = pos;
+		sb.Append(CodeMarker);
+		var p = pos;
 		sb.Append(p);
-		sb.Append("-");
+		sb.Append(RangeMarker);
 		if (del > 0) {
 			sb.Append(del);
 		}
-		sb.Append(";");
+		sb.Append(InsertMarker);
 		if (!string.IsNullOrEmpty(ins)) {
-			sb.Append(ins.Replace((char)31, ' '));
+			sb.Append(ins.Replace(CodeMarker, ' ')); // TODO: improve this: proper escape sequence
 		}
 	}
 
 	#endregion
 	#endregion
 
+	private const string CompressionMarker = "[DCMP]";
+	private const char CodeMarker = '^';//(char)31;
+	private const char RangeMarker = '-';
+	private const char InsertMarker = ';';
 }

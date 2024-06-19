@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 namespace DocDiffStd;
 
 /// <summary>
-/// Document differences between to chunks of text
+/// Given two revisions of a document, produce a series of differences between them.
 /// </summary>
 public class Differences : IEnumerable<Fragment> {
 	/// <summary>Maximum RAM to use for optimisation search, in bytes</summary>
@@ -191,25 +191,43 @@ public class Differences : IEnumerable<Fragment> {
 	/// The published algorithm passes recursively parts of the A and B sequences.
 	/// To avoid copying these arrays the lower and upper bounds are passed while the sequences stay constant.
 	/// </summary>
-	private static void LongestCommonSubsequence (DiffData dataA, int lowerA, int upperA, DiffData dataB, int lowerB, int upperB, int[] downVector, int[] upVector) {
-		unchecked {
-			while (lowerA < upperA && lowerB < upperB && dataA.Data[lowerA] == dataB.Data[lowerB]) {
-				lowerA++; lowerB++;
+	private static void LongestCommonSubsequence(DiffData dataA, int lowerA, int upperA, DiffData dataB, int lowerB, int upperB, int[] downVector, int[] upVector)
+	{
+		while (true)
+		{
+			unchecked
+			{
+				while (lowerA < upperA && lowerB < upperB && dataA.Data[lowerA] == dataB.Data[lowerB])
+				{
+					lowerA++;
+					lowerB++;
+				}
+
+				while (lowerA < upperA && lowerB < upperB && dataA.Data[upperA - 1] == dataB.Data[upperB - 1])
+				{
+					--upperA;
+					--upperB;
+				}
+
+				if (lowerA == upperA)
+				{
+					while (lowerB < upperB) dataB.Modified[lowerB++] = true;
+				}
+				else if (lowerB == upperB)
+				{
+					while (lowerA < upperA) dataA.Modified[lowerA++] = true;
+				}
+				else
+				{
+					var middleSnake = ShortestMiddleSnake(dataA, lowerA, upperA, dataB, lowerB, upperB, downVector, upVector);
+					LongestCommonSubsequence(dataA, lowerA, middleSnake.x, dataB, lowerB, middleSnake.y, downVector, upVector);
+					lowerA = middleSnake.x;
+					lowerB = middleSnake.y;
+					continue;
+				}
 			}
-			while (lowerA < upperA && lowerB < upperB && dataA.Data[upperA - 1] == dataB.Data[upperB - 1]) {
-				--upperA; --upperB;
-			}
-			if (lowerA == upperA) {
-				while (lowerB < upperB)
-					dataB.Modified[lowerB++] = true;
-			} else if (lowerB == upperB) {
-				while (lowerA < upperA)
-					dataA.Modified[lowerA++] = true;
-			} else {
-				var smsrd = ShortestMiddleSnake(dataA, lowerA, upperA, dataB, lowerB, upperB, downVector, upVector);
-				LongestCommonSubsequence(dataA, lowerA, smsrd.x, dataB, lowerB, smsrd.y, downVector, upVector);
-				LongestCommonSubsequence(dataA, smsrd.x, upperA, dataB, smsrd.y, upperB, downVector, upVector);
-			}
+
+			break;
 		}
 	}
 
@@ -234,10 +252,10 @@ public class Differences : IEnumerable<Fragment> {
 				while (lineA < dataA.Length && (lineB >= dataB.Length || dataA.Modified[lineA])) lineA++;
 				while (lineB < dataB.Length && (lineA >= dataA.Length || dataB.Modified[lineB])) lineB++;
 
-				if ((startA < lineA) || (startB < lineB)) {
-					var aItem = new DiffChange { StartA = startA, StartB = startB, DeletedA = lineA - startA, InsertedB = lineB - startB };
-					a.Add(aItem);
-				}
+				if ((startA >= lineA) && (startB >= lineB)) continue;
+				
+				var aItem = new DiffChange { StartA = startA, StartB = startB, DeletedA = lineA - startA, InsertedB = lineB - startB };
+				a.Add(aItem);
 			}
 		}
 
@@ -255,6 +273,7 @@ public class Differences : IEnumerable<Fragment> {
 	IEnumerator IEnumerable.GetEnumerator () {
 		return OutputDiffs();
 	}
+	#endregion
 
 	private IEnumerator<Fragment> OutputDiffs () {
 		if (_fragmentDifferences.Length <= 0) { } else {
@@ -268,14 +287,14 @@ public class Differences : IEnumerable<Fragment> {
 					p += _rightFragments[n].Length;
 					n++;
 				}
-				if (!string.IsNullOrEmpty(fragsOld.SplitPart)) yield return fragsOld;
+				if (!string.IsNullOrEmpty(fragsOld.Content)) yield return fragsOld;
 
 				// write deleted lines
 				var fragsGone = new Fragment(FragmentType.Deleted, p);
 				for (var m = 0; m < aItem.DeletedA; m++) {
 					fragsGone.Join(_leftFragments[aItem.StartA + m]);
 				}
-				if (!string.IsNullOrEmpty(fragsGone.SplitPart)) yield return fragsGone;
+				if (!string.IsNullOrEmpty(fragsGone.Content)) yield return fragsGone;
 
 				// write inserted lines
 				var fragsAdd = new Fragment(FragmentType.Inserted, p);
@@ -284,7 +303,7 @@ public class Differences : IEnumerable<Fragment> {
 					p += _rightFragments[n].Length;
 					n++;
 				}
-				if (!string.IsNullOrEmpty(fragsAdd.SplitPart)) yield return fragsAdd;
+				if (!string.IsNullOrEmpty(fragsAdd.Content)) yield return fragsAdd;
 			}
 
 			// write rest of unchanged lines
@@ -293,7 +312,7 @@ public class Differences : IEnumerable<Fragment> {
 				fragsRunoff.Join(_rightFragments[n]);
 				n++;
 			}
-			if (!string.IsNullOrEmpty(fragsRunoff.SplitPart)) yield return fragsRunoff;
+			if (!string.IsNullOrEmpty(fragsRunoff.Content)) yield return fragsRunoff;
 		}
 	}
 
@@ -324,6 +343,5 @@ public class Differences : IEnumerable<Fragment> {
 		Inserted
 	}
 
-	#endregion
 	#endregion
 }

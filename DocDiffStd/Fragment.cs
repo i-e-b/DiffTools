@@ -1,10 +1,12 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 
 namespace DocDiffStd {
+	
 	/// <summary>
 	/// A class to wrap up document changes.
 	/// </summary>
-	public class Fragment {
+	public class Fragment : IEquatable<Fragment>, IComparable<Fragment> {
 		
 		/// <summary>
 		/// Type of the fragment. Will be <see cref="Differences.FragmentType.Deleted"/>, <see cref="Differences.FragmentType.Inserted"/>, or <see cref="Differences.FragmentType.Unchanged"/>.
@@ -31,15 +33,15 @@ namespace DocDiffStd {
 		/// <summary>
 		/// The text covered by this fragment, including unchanged sections
 		/// </summary>
-		public string SplitPart => _sb.ToString();
+		public string Content => _sb.ToString();
 
 		/// <summary>
-		/// Length of the <see cref="SplitPart"/> string
+		/// Length of the <see cref="Content"/> string
 		/// </summary>
 		public int Length => _sb.Length;
 
 		/// <summary>
-		/// Position of the change in the (?original) text
+		/// Equivalent position of the change in new/right text
 		/// </summary>
 		public int Position { get; set; }
 
@@ -69,6 +71,26 @@ namespace DocDiffStd {
 		/// </summary>
 		public void Join (string part) {
 			_sb.Append(part);
+		}
+
+		/// <inheritdoc />
+		public bool Equals(Fragment other)
+		{
+			return Position == other.Position && Length == other.Length && Content == other.Content;
+		}
+
+		/// <inheritdoc />
+		public int CompareTo(Fragment other)
+		{
+			return Position.CompareTo(other.Position);
+		}
+
+		/// <summary>
+		/// Readable representation of the fragment
+		/// </summary>
+		public override string ToString()
+		{
+			return $"{TypeString}@{Position}: {Content}";
 		}
 	}
 }

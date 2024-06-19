@@ -9,69 +9,77 @@ public class BasicDocumentChangeTests
     [Test]
     public void can_detect_changes_per_word()
     {
-        var differences = new Differences(ShortLeft, ShortRight, Differences.PerWord).ToList();
+        var fragments = new Differences(Samples.ShortLeft, Samples.ShortRight, Differences.PerWord).ToList();
 
-        Assert.That(differences.Count, Is.EqualTo(12));
+        Assert.That(fragments.Count, Is.EqualTo(12));
 
-        foreach (var change in differences)
+        foreach (var change in fragments)
         {
-            Console.WriteLine($"{change.Type}: '{change.SplitPart}'");
+            Console.WriteLine($"{change.Type}: '{change.Content}'");
         }
     }
     
     [Test]
     public void can_detect_changes_per_line()
     {
-        var differences = new Differences(ShortLeft, ShortRight, Differences.PerLine).ToList();
+        var fragments = new Differences(Samples.ShortLeft, Samples.ShortRight, Differences.PerLine).ToList();
 
-        Assert.That(differences.Count, Is.EqualTo(6));
+        Assert.That(fragments.Count, Is.EqualTo(6));
 
-        foreach (var change in differences)
+        foreach (var change in fragments)
         {
-            Console.WriteLine($"{change.Type}: '{change.SplitPart.Replace("\r"," ").Replace("\n"," ")}'");
+            Console.WriteLine($"{change.Type}: '{change.Content.Replace("\r"," ").Replace("\n"," ")}'");
         }
     }
     
     [Test]
     public void can_detect_changes_per_sentence()
     {
-        var differences = new Differences(ShortLeft, ShortRight, Differences.PerSentence).ToList();
+        var fragments = new Differences(Samples.ShortLeft, Samples.ShortRight, Differences.PerSentence).ToList();
 
-        Assert.That(differences.Count, Is.EqualTo(6));
+        Assert.That(fragments.Count, Is.EqualTo(6));
 
-        foreach (var change in differences)
+        foreach (var change in fragments)
         {
-            Console.WriteLine($"{change.Type}: '{change.SplitPart.Replace("\r","").Replace("\n","")}'");
+            Console.WriteLine($"{change.Type}: '{change.Content.Replace("\r","").Replace("\n","")}'");
         }
     }
     
     [Test]
     public void can_detect_changes_per_character()
     {
-        var differences = new Differences(ShortLeft, ShortRight, Differences.PerCharacter).ToList();
+        var fragments = new Differences(Samples.ShortLeft, Samples.ShortRight, Differences.PerCharacter).ToList();
 
-        Assert.That(differences.Count, Is.EqualTo(30));
+        Assert.That(fragments.Count, Is.EqualTo(30));
 
-        foreach (var change in differences)
+        foreach (var change in fragments)
         {
-            Console.WriteLine($"{change.Type}: '{change.SplitPart}'");
+            Console.WriteLine($"{change.Type}: '{change.Content}'");
         }
     }
-    
-    #region Samples
-    private const string ShortLeft = @"There now is your insular city of the Manhattoes, belted round by
-wharves as Indian isles by coral reefs—commerce surrounds it with her
-surf. Right and left, the streets take you waterward. Its extreme
-downtown is the battery, where that noble mole is washed by waves, and
-cooled by breezes, which a few hours previous were out of sight of
-land. Look at the crowds of water-gazers there.";
 
-    private const string ShortRight = @"Here now is your island city of the Manhatten, belted round by
-wharves as Indian isles by coral reefs—commerce surrounds it with her
-surf. Right and left, the streets take you to the sea. Its extreme
-downtown is the battery, where that noble mole is washed by waves, and
-cooled by breezes, which a few hours previous were out of sight of
-land. Look at the crowds of water-gazers there.";
+    [Test]
+    public void can_get_i_u_d_codes_for_fragments()
+    {
+        var fragments = new Differences(Samples.ShortLeft, Samples.ShortRight, Differences.PerCharacter).ToList();
 
-    #endregion Samples
+        foreach (var change in fragments)
+        {
+            switch (change.Type)
+            {
+                case Differences.FragmentType.Unchanged:
+                    Assert.That(change.TypeString, Is.EqualTo("u"));
+                    break;
+                case Differences.FragmentType.Deleted:
+                    Assert.That(change.TypeString, Is.EqualTo("d"));
+                    break;
+                case Differences.FragmentType.Inserted:
+                    Assert.That(change.TypeString, Is.EqualTo("i"));
+                    break;
+                default:
+                    Assert.Fail("unknown type");
+                    break;
+            }
+        }
+    }
 }
